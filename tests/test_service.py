@@ -19,6 +19,9 @@ class FakeXClient:
     def get_connected_user(self):
         return {"id": "42", "username": "fightbotuser"}
 
+    def oauth2_configured(self):
+        return True
+
 
 class FakeSlackClient:
     def __init__(self):
@@ -85,6 +88,22 @@ def test_poll_once_sends_only_matching_tweet(tmp_path):
     usage = store.get_daily_usage()
     assert usage["search_calls"] == 1
     assert slack_client.sent[0][0]["warning_text"].startswith("Warning: X API may reject this reply")
+
+
+def test_poll_once_uses_detection_only_warning_without_oauth2(tmp_path):
+    store = Store(tmp_path / "state.db")
+
+    class DetectionOnlyXClient(FakeXClient):
+        def oauth2_configured(self):
+            return False
+
+    slack_client = FakeSlackClient()
+    service = BotService(settings(), store, DetectionOnlyXClient(), slack_client)
+    result = service.poll_once()
+    assert result["status"] == "ok"
+    assert len(result["matches"]) == 1
+    assert slack_client.sent[0][0]["warning_text"] == "Detection-only mode: use Open X to review or reply manually in X."
+    assert slack_client.sent[0][1] is None
 
 
 def test_poll_once_skips_reply_thread_matches(tmp_path):
@@ -192,6 +211,20 @@ def test_unknown_action_is_rejected(tmp_path):
     assert code == 400
     assert result["text"] == "Unknown action."
     assert x_client.replies == []
+
+
+def test_reply_action_is_disabled_without_oauth2(tmp_path):
+    store = Store(tmp_path / "state.db")
+
+    class DetectionOnlyXClient(FakeXClient):
+        def oauth2_configured(self):
+            return False
+
+    service = BotService(settings(), store, DetectionOnlyXClient(), FakeSlackClient())
+    service.poll_once()
+    result, code = service.handle_action("reply_a", "1")
+    assert code == 200
+    assert result["text"] == "Reply actions are disabled in detection-only mode."
 
 
 def test_failed_reply_keeps_buttons_for_retry(tmp_path):

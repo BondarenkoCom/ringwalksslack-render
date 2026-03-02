@@ -54,3 +54,18 @@ def test_send_match_includes_warning_text_when_present():
     )
     context_block = next(block for block in blocks if block["type"] == "context")
     assert any("not guaranteed" in item["text"] for item in context_block["elements"])
+
+
+def test_send_match_omits_reply_buttons_without_templates():
+    client = SlackClient(settings())
+    blocks = client._build_blocks(
+        "tweet-1",
+        "What time is the main event?",
+        "https://x.com/i/web/status/1",
+        None,
+        warning_text="Detection-only mode: use Open X to review or reply manually in X.",
+        include_actions=True,
+    )
+    actions_block = next(block for block in blocks if block["type"] == "actions")
+    labels = [item.get("text", {}).get("text") for item in actions_block["elements"]]
+    assert labels == ["Open X", "Ignore"]

@@ -155,15 +155,16 @@ class SlackClient:
                 }
             )
         if include_actions:
-            blocks.append(
+            elements = [
                 {
-                    "type": "actions",
-                    "elements": [
-                        {
-                            "type": "button",
-                            "text": {"type": "plain_text", "text": "Open X"},
-                            "url": tweet_url,
-                        },
+                    "type": "button",
+                    "text": {"type": "plain_text", "text": "Open X"},
+                    "url": tweet_url,
+                }
+            ]
+            if reply_templates:
+                elements.extend(
+                    [
                         {
                             "type": "button",
                             "text": {"type": "plain_text", "text": "Reply A"},
@@ -177,14 +178,21 @@ class SlackClient:
                             "action_id": "reply_b",
                             "value": str(tweet_id),
                         },
-                        {
-                            "type": "button",
-                            "text": {"type": "plain_text", "text": "Ignore"},
-                            "style": "danger",
-                            "action_id": "ignore",
-                            "value": str(tweet_id),
-                        },
-                    ],
+                    ]
+                )
+            elements.append(
+                {
+                    "type": "button",
+                    "text": {"type": "plain_text", "text": "Ignore"},
+                    "style": "danger",
+                    "action_id": "ignore",
+                    "value": str(tweet_id),
+                }
+            )
+            blocks.append(
+                {
+                    "type": "actions",
+                    "elements": elements,
                 }
             )
         return blocks

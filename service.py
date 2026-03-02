@@ -51,6 +51,12 @@ class BotService:
     def get_usage_snapshot(self):
         return self.store.get_daily_usage()
 
+    def reply_enabled(self):
+        checker = getattr(self.x_client, "oauth2_configured", None)
+        if not callable(checker):
+            return False
+        return bool(checker())
+
     def poll_once(self):
         if not has_slack_credentials(self.settings):
             raise RuntimeError("Slack credentials are missing")
@@ -84,7 +90,7 @@ class BotService:
                         "url": tweet_url,
                         "warning_text": assessment["warning_text"],
                     },
-                    self.settings["reply_templates"],
+                    self.settings["reply_templates"] if self.reply_enabled() else None,
                 )
                 self.store.mark_alerted(tweet_id, sent_msg["channel"], sent_msg["ts"])
                 sent.append({"tweet_id": tweet_id, "slack_ts": sent_msg["ts"]})
@@ -118,6 +124,8 @@ class BotService:
         }
 
     def build_reply_warning(self, tweet):
+        if not self.reply_enabled():
+            return "Detection-only mode: use Open X to review or reply manually in X."
         user = self.x_client.get_connected_user()
         username = (user.get("username") or "").strip().lower()
         user_id = str(user.get("id") or "").strip()
@@ -145,6 +153,8 @@ class BotService:
     def handle_action(self, action_id, tweet_id):
         if action_id not in {"reply_a", "reply_b", "ignore"}:
             return {"text": "Unknown action."}, 400
+        if action_id in {"reply_a", "reply_b"} and not self.reply_enabled():
+            return {"text": "Reply actions are disabled in detection-only mode."}, 200
         tweet = self.store.get_tweet(tweet_id)
         if not tweet:
             return {"text": "Tweet not found."}, 404

@@ -1,0 +1,44 @@
+{
+  "server": {
+    "host": "0.0.0.0",
+    "port": 3000
+  },
+  "search": {
+    "poll_interval_seconds": 300,
+    "max_results": 10,
+    "language": "en",
+    "ignore_retweets": true,
+    "ignore_replies": false
+  },
+  "matcher": {
+    "timing_phrases": [
+      "what time",
+      "what time is",
+      "what time does",
+      "when is",
+      "when does",
+      "ring walk time",
+      "walkout time",
+      "start time"
+    ],
+    "fighter_names": [
+      "Haney"
+    ],
+    "target_terms": [
+      "main event",
+      "ring walk"
+    ]
+  },
+  "reply_templates": {
+    "a": "Main event ring walk timing is usually announced closer to fight time. Keep an eye on the live broadcast and official event updates.",
+    "b": "Ring walk timing can shift during the card. The best estimate comes from the live broadcast once the co-main wraps up."
+  },
+  "limits": {
+    "daily_cost_cap_usd": 15,
+    "search_request_cost_usd": 0.02,
+    "reply_request_cost_usd": 0.02,
+    "min_reply_gap_seconds": 30,
+    "request_timeout_seconds": 30,
+    "retry_backoff_seconds": [5, 15, 30, 60]
+  }
+}
